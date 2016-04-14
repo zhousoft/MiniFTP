@@ -2,6 +2,9 @@
 #define _COMMON_H_
 
 #include <unistd.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <pwd.h>
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -20,6 +23,13 @@
 		perror(m);\
 		exit(EXIT_FAILURE);\
 	}\
-	whie(0)
+	while(0)
+
+
+#define MAX_COMMAND_LINE 1024
+#define MAX_COMMAND 32
+#define MAX_ARG 1024 //参数最大值
+
+
 
 #endif /*_COMMON_H_*/

@@ -1,9 +1,31 @@
 #include "common.h"
 #include "sysutil.h"
 #include "session.h"
-
+#include "parseconf.h"
+#include "tunable.h"
 int main()
 {
+	
+
+parseconf_load_file(MINIFTP_CONF);//加载配置文件
+/*  printf("pav=%d\n",tunable_pasv_enable);
+	printf("port=%d\n",tunable_port_enable);
+	printf("listenport=%u\n",tunable_listen_port);
+	printf("maxclients=%u\n",tunable_max_clients);
+	printf("maxperip=%u\n",tunable_max_per_ip);
+	printf("accepttimeout=%u\n",tunable_accept_timeout);
+	printf("connectimeout=%u\n",tunable_connect_timeout);
+	printf("idletimeout=%u\n",tunable_idle_session_timeout);
+	printf("datatiemout=%u\n",tunable_data_connection_timeout);
+	printf("localumask=0%o\n",tunable_local_umask);
+	printf("uploadrate=%u\n",tunable_upload_max_rate);
+	printf("downloadrate=%u\n",tunable_download_max_rate);*/
+
+if(tunable_listen_address == NULL)
+		printf("listen address = NULL");
+	else
+		printf("listen address = %s\n",tunable_listen_address);
+
 	if(getuid() != 0)//如果不是root用户启动
 	{
 		fprintf(stderr,"miniftpd: must be started ad root\n");
@@ -17,7 +39,7 @@ int main()
 		/*父子进程通道*/
 		-1,-1,
 	};
-	int listenfd = tcp_server(NULL, 5189);/*创建服务器*/
+	int listenfd = tcp_server(tunable_listen_address, tunable_listen_port);/*创建服务器*/
 	int conn;
 	pid_t pid;
 

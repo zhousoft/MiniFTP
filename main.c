@@ -35,7 +35,7 @@ if(tunable_listen_address == NULL)
 	session_t sess = 
 	{
 		/*控制连接*/
-		-1,"","","",
+		0,-1,"","","",
 		/*父子进程通道*/
 		-1,-1,
 	};

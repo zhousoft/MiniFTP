@@ -4,14 +4,7 @@
 #include "privparent.h"
 void begin_session(session_t *sess)
 {
- 	struct passwd *pw = getpwnam("nobody");
-	if(pw == NULL)
-		return;
-	/*将当前进程设置为nobody进程*/
-	if(setegid(pw->pw_gid) < 0)
-		ERR_EXIT("setegid");
-	if(seteuid(pw->pw_uid) < 0)
-		ERR_EXIT("seteuid");
+ 		
 
 	int sockfds[2];
 	if(socketpair(PF_UNIX, SOCK_STREAM, 0, sockfds) < 0)
@@ -30,7 +23,16 @@ void begin_session(session_t *sess)
 		handle_child(sess);
 	}
 	else
-	{
+	{	
+		struct passwd *pw = getpwnam("nobody");
+		if(pw == NULL)
+			return;
+
+		/*将当前进程设置为nobody进程*/
+		if(setegid(pw->pw_gid) < 0)
+			ERR_EXIT("setegid");
+		if(seteuid(pw->pw_uid) < 0)
+			ERR_EXIT("seteuid");
 		//nobody进程，与服务进程通信，进行权限控制
 		close(sockfds[1]);
 		sess->parent_fd = sockfds[0];

@@ -5,8 +5,8 @@
 
 typedef struct session
 {
-	//控制连接
-	int ctrl_fd;
+	uid_t uid;//保存登陆用户uid
+	int ctrl_fd;//控制连接
 	char cmdline[MAX_COMMAND_LINE];
 	char cmd[MAX_COMMAND];
 	char arg[MAX_ARG];

@@ -3,8 +3,10 @@ CC=gcc
 CFLAGS=-Wall -g
 BIN=miniftpd
 OBJS=main.o sysutil.o session.o ftpproto.o privparent.o str.o tunable.o parseconf.o
+LIBS=-lcrypt
+
 $(BIN):$(OBJS)
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LIBS)
 %.o:%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 clean:

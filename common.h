@@ -5,12 +5,13 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <shadow.h>
+#include <crypt.h>
 #include <errno.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
 
 
 #include <stdlib.h>

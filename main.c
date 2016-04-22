@@ -38,6 +38,8 @@ if(tunable_listen_address == NULL)
 		0,-1,"","","",
 		/*父子进程通道*/
 		-1,-1,
+		/*FTP协议状态*/
+		0
 	};
 	int listenfd = tcp_server(tunable_listen_address, tunable_listen_port);/*创建服务器*/
 	int conn;

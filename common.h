@@ -13,6 +13,10 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#include <time.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <sys/time.h>
 
 #include <stdlib.h>
 #include <stdio.h>

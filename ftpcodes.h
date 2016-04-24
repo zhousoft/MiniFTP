@@ -6,9 +6,11 @@
 
 #define FTP_NOOPOK			200
 #define FTP_TYPEOK			200
+#define FTP_PORTOK			200
 #define FTP_FEAT			211
 #define FTP_SYSTOK			215
 #define FTP_GREET			220
+#define FTP_TRANSFEROK		226
 #define FTP_LOGINOK			230
 #define FTP_PWDOK			257
 #define FTP_GIVEPWORD		331

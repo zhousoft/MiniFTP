@@ -340,10 +340,9 @@ int get_transfer_fd(session_t *sess)
 	{
 		//tcp_client(20);//主动模式绑定端口20
 		int fd = tcp_client(0);
-		printf("start connect\n");
+	//	int fd = socket(PF_INET, SOCK_STREAM, 0);
 		if(connect_timeout(fd, sess->port_addr, tunable_connect_timeout) < 0)
 		{
-			printf("connect failed\n");
 			close(fd);
 			return 0;
 		}
@@ -477,14 +476,11 @@ static void do_appe(session_t *sess)
 }
 static void do_list(session_t *sess)
 {
-	printf("create list\n");
 	//创建数据连接
 	if(get_transfer_fd(sess) == 0)
 	{
-		printf("create failde\n");
 		return;
 	}
-	printf("end list\n");
 	//响应150
 	ftp_reply(sess, FTP_DATACONN, "Here comes the directory listing.");
 	//传输列表

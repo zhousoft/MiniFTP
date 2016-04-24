@@ -1,4 +1,28 @@
 #include "sysutil.h"
+int tcp_client(unsigned short port)
+{
+	int sock;
+	if((sock = socket(PF_INET, SOCK_STREAM, 0)) < 0)
+		ERR_EXIT("tcp_client");
+
+	if(port > 0)
+	{
+		int on = 1;
+		if((setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on))) < 0)
+			ERR_EXIT("setsockopt");
+
+		char ip[16] = {0};
+		getlocalip(ip);
+		struct sockaddr_in localaddr;
+		memset(&localaddr, 0, sizeof(localaddr));
+		localaddr.sin_family = AF_INET;
+		localaddr.sin_port = htons(port);
+		localaddr.sin_addr.s_addr = inet_addr(ip);
+		if(bind(sock, (struct sockaddr*)&localaddr, sizeof(localaddr)) < 0)
+			ERR_EXIT("bind");
+	}
+	return sock;
+}
 /**
  * tcp_server -启动tcp服务器
  * @host: 服务器IP地址或者服务器主机名
@@ -229,6 +253,68 @@ int accept_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
 }
 
 /**
+*
+*/
+
+int connect_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
+{
+	int ret;
+	socklen_t addrlen = sizeof(struct sockaddr_in);
+
+	if(wait_seconds > 0)
+		activate_nonblock(fd);
+	
+	ret = connect(fd, (struct sockaddr*)addr, addrlen);
+
+	if(ret < 0 && errno == EINPROGRESS)
+	{
+		fd_set connect_fdset;
+		struct timeval timeout;
+		FD_ZERO(&connect_fdset);
+		FD_SET(fd,&connect_fdset);
+		timeout.tv_sec = wait_seconds;
+		timeout.tv_usec = 0;
+		do
+		{
+			//一旦连接建立，套接字就可写
+			ret = select(fd + 1, NULL, &connect_fdset, NULL, &timeout);
+		}while(ret < 0 && errno == EINTR);
+		if(ret == 0)
+		{
+			errno = ETIMEDOUT;
+			ret = -1;
+		}
+		else if(ret < 0)
+			return -1;
+		else if(ret == 1)
+		{
+			//ret返回1可能有两种情况，一种时连接建立成功，一种是套接字产生错误
+			//此时错误信息不会保存至errno变量中，要调用getsockopt来获取
+			int err;
+			socklen_t socklen = sizeof(err);
+			int sockoptret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &socklen);
+			if(sockoptret == -1)
+			{
+				return -1;
+			}
+			if(err == 0)
+			{
+				ret = 0;
+			}
+			else
+			{
+				errno = err;
+				ret = -1;
+			}
+		}
+	}
+	if(wait_seconds > 0)
+	{
+		deactivate_nonblock(fd);
+	}
+	return ret;
+}
+/**
 * readn-读取n个字节
 * @fd: 要读取文件描述符
 * @buf: 输出参数，保存读取结果
@@ -362,4 +448,74 @@ ssize_t readline(int sockfd, void *buf, size_t maxline)
 		bufp += nread;
 	}
 	return -1;
+}
+
+void send_fd(int sock_fd, int fd)
+{
+	int ret;
+	struct msghdr msg;
+	struct cmsghdr *p_cmsg;
+	struct iovec vec;
+	char cmsgbuf[CMSG_SPACE(sizeof(fd))];
+	int *p_fds;
+	char sendchar = 0;
+	msg.msg_control = cmsgbuf;
+	msg.msg_controllen = sizeof(cmsgbuf);
+	p_cmsg = CMSG_FIRSTHDR(&msg);
+	p_cmsg->cmsg_level = SOL_SOCKET;
+	p_cmsg->cmsg_type = SCM_RIGHTS;
+	p_cmsg->cmsg_len = CMSG_LEN(sizeof(fd));
+	p_fds = (int *)CMSG_DATA(p_cmsg);
+	*p_fds = fd;
+
+	msg.msg_name = NULL;
+	msg.msg_namelen = 0;
+	msg.msg_iov = &vec;
+	msg.msg_iovlen = 1;
+	msg.msg_flags = 0;
+
+	vec.iov_base = &sendchar;
+	vec.iov_len = sizeof(sendchar);
+	ret = sendmsg(sock_fd, &msg, 0);
+	if(ret != 1)
+		ERR_EXIT("sendmsg");
+
+}
+
+int recv_fd(const int sock_fd)
+{
+	int ret;
+	struct msghdr msg;
+	char recvchar;
+	struct iovec vec;
+	int recv_fd;
+	char cmsgbuf[CMSG_SPACE(sizeof(recv_fd))];
+	struct cmsghdr *p_cmsg;
+	int *p_fd;
+	vec.iov_base = &recvchar;
+	vec.iov_len = sizeof(recvchar);
+	msg.msg_name = NULL;
+	msg.msg_namelen = 0;
+	msg.msg_iov = &vec;
+	msg.msg_iovlen = 1;
+	msg.msg_control = cmsgbuf;
+	msg.msg_controllen = sizeof(cmsgbuf);
+	msg.msg_flags = 0;
+
+	p_fd = (int *)CMSG_DATA(CMSG_FIRSTHDR(&msg));
+	*p_fd = -1;
+	ret = recvmsg(sock_fd, &msg, 0);
+	if(ret != 1)
+		ERR_EXIT("recvmsg");
+	
+	p_cmsg = CMSG_FIRSTHDR(&msg);
+	if(p_cmsg == NULL)
+		ERR_EXIT("no passed fd");
+
+	p_fd = (int*)CMSG_DATA(p_cmsg);
+	recv_fd = *p_fd;
+	if(recv_fd == -1)
+		ERR_EXIT("no passed fd");
+	
+	return recv_fd;
 }

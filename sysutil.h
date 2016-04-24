@@ -3,9 +3,10 @@
 
 #include "common.h"/*整合的通用头文件*/
 
+int tcp_client(unsigned short port);
 int tcp_server(const char *host, unsigned short port); 
 
-int getlocalip(char *ip);/*换取本地ip*/
+int getlocalip(char *ip);/*获取本地ip*/
 
 void activate_nonblock(int fd);/*激活非阻塞模式*/
 void deactivate_nonblock(int fd);/*取消非阻塞模式*/
@@ -21,6 +22,6 @@ ssize_t recv_peek(int sockfd, void *buf, size_t len);/*窥探socket缓冲中是�
 ssize_t readline(int sockfd, void *buf, size_t maxline);
 
 void send_fd(int sock_fd, int fd);/*发送文件描述符*/
-void recv_fd(const int sock_fd);/*接收文件描述符*/
+int  recv_fd(const int sock_fd);/*接收文件描述符*/
 
 #endif/*_SYS_UTIL_H_*/

@@ -11,7 +11,8 @@ typedef struct session
 	char cmd[MAX_COMMAND];
 	char arg[MAX_ARG];
 	//数据连接
-	struct sockaddr_in *port_addr;
+	struct sockaddr_in *port_addr;//port模式要连接的客户端地址
+	int pasv_listen_fd;//pasv模式要监听的套接字
 	int data_fd;//数据套接字
 	//父子进程通道
 	int parent_fd;

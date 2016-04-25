@@ -11,9 +11,12 @@
 #define FTP_SYSTOK			215
 #define FTP_GREET			220
 #define FTP_TRANSFEROK		226
+#define FTP_ABOROK			226
+#define FTP_PASVOK			227
 #define FTP_LOGINOK			230
 #define FTP_PWDOK			257
 #define FTP_GIVEPWORD		331
+#define FTP_BADSENDCONN		425
 #define FTP_BADCMD			500
 #define FTP_COMMANDNOTIMPL	502
 #define FTP_LOGINERR		530

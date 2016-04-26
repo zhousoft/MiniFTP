@@ -43,6 +43,9 @@ if(tunable_listen_address == NULL)
 		/*FTP协议状态*/
 		0
 	};
+
+	signal(SIGCHLD, SIG_IGN);//忽略SIGCHLD信号，避免僵尸进程
+
 	int listenfd = tcp_server(tunable_listen_address, tunable_listen_port);/*创建服务器*/
 	int conn;
 	pid_t pid;

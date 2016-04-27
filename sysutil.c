@@ -10,7 +10,6 @@ int tcp_client(unsigned short port)
 		int on = 1;
 		if((setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&on, sizeof(on))) < 0)
 			ERR_EXIT("setsockopt");
-
 		char ip[16] = {0};
 		getlocalip(ip);
 		struct sockaddr_in localaddr;
@@ -21,6 +20,7 @@ int tcp_client(unsigned short port)
 		if(bind(sock, (struct sockaddr*)&localaddr, sizeof(localaddr)) < 0)
 			ERR_EXIT("bind");
 	}
+	printf("tcpclient = %d\n",sock);
 	return sock;
 }
 /**
@@ -81,12 +81,26 @@ int getlocalip(char *ip)
 {
 	char host[100] = {0};
 	if(gethostname(host,sizeof(host)) < 0)
+	{
+		printf("getlocalip err: gethostname fail.\n");
 		return -1;
+	}
 	struct hostent *hp;
 	if((hp = gethostbyname(host)) == NULL)
+	{
+		printf("getlocalip err: gethostbyname fail.\n");
 		return -1;
-	
+	}
 	strcpy(ip, inet_ntoa(*(struct in_addr*)hp->h_addr));
+#ifdef DEBUG
+	
+	strcpy(ip,"192.168.1.115");
+	printf("hostname:%s\naddress list:",hp->h_name);
+	int i;
+	for( i = 0; hp->h_addr_list[i]; i++)
+		printf("%s\t",inet_ntoa(*(struct in_addr*)(hp->h_addr_list[i])));
+#endif
+	printf("getlocalip: %s\n",ip);
 		return 0;
 }
 
@@ -265,7 +279,7 @@ int connect_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
 		activate_nonblock(fd);
 	
 	ret = connect(fd, (struct sockaddr*)addr, addrlen);
-
+	printf("connect nonblock ret = %d and errno = %d\n",ret,errno);
 	if(ret < 0 && errno == EINPROGRESS)
 	{
 		fd_set connect_fdset;
@@ -281,37 +295,46 @@ int connect_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
 		}while(ret < 0 && errno == EINTR);
 		if(ret == 0)
 		{
+			printf("connect time out.\n");
 			errno = ETIMEDOUT;
 			ret = -1;
 		}
 		else if(ret < 0)
+		{
+			printf("connect timeout err\n");
 			return -1;
+		}
 		else if(ret == 1)
 		{
-			//ret返回1可能有两种情况，一种时连接建立成功，一种是套接字产生错误
+			//ret返回1可能有两种情况，一种是连接建立成功，一种是套接字产生错误
 			//此时错误信息不会保存至errno变量中，要调用getsockopt来获取
 			int err;
 			socklen_t socklen = sizeof(err);
 			int sockoptret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &socklen);
 			if(sockoptret == -1)
 			{
+				printf("getsocktopt err.\n");
 				return -1;
 			}
 			if(err == 0)
 			{
+				printf("err == 0\n");
 				ret = 0;
 			}
 			else
 			{
+				printf("connect sockt err.\n");
 				errno = err;
 				ret = -1;
 			}
 		}
 	}
+
 	if(wait_seconds > 0)
 	{
 		deactivate_nonblock(fd);
 	}
+	printf("return ret = %d\n",ret);
 	return ret;
 }
 /**
@@ -518,4 +541,104 @@ int recv_fd(const int sock_fd)
 		ERR_EXIT("no passed fd");
 	
 	return recv_fd;
+}
+const char *statbuf_get_perms(struct stat *sbuf)
+{
+	static char perms[] = "----------";
+	perms[0] = '?';
+	mode_t mode = sbuf->st_mode;
+	//获取文件类型
+	switch(mode & S_IFMT)
+	{
+		case S_IFREG:
+			perms[0] = '-';
+			break;
+		case S_IFDIR:
+			perms[0] = 'd';
+			break;
+		case S_IFLNK:
+			perms[0] = 'l';
+			break;
+		case S_IFIFO:
+			perms[0] = 'p';
+			break;
+		case S_IFSOCK:
+			perms[0] = 's';
+			break;
+		case S_IFCHR:
+			perms[0] = 'c';
+			break;
+		case S_IFBLK:
+			perms[0] = 'b';
+			break;
+	}
+	//获取权限位
+	if(mode & S_IRUSR)
+	{
+		perms[1] = 'r';
+	}
+	if(mode & S_IWUSR)
+	{
+		perms[2] = 'w';
+	}
+	if(mode & S_IXUSR)
+	{
+		perms[3] = 'x';
+	}
+	if(mode & S_IRGRP)
+	{
+		perms[4] = 'r';
+	}
+	if(mode & S_IWGRP)
+	{
+		perms[5] = 'w';
+	}
+	if(mode & S_IXGRP)
+	{
+		perms[6] = 'x';
+	}
+	if(mode & S_IROTH)
+	{
+		perms[7] = 'r';
+	}
+	if(mode & S_IWOTH)
+	{
+		perms[8] = 'w';
+	}
+	if(mode & S_IXOTH)
+	{
+		perms[9] = 'x';
+	}
+	//特殊权限位
+	if(mode & S_ISUID)	
+	{
+		perms[3] = (perms[3] == 'x')?'s' : 'S';
+	}
+	if(mode & S_ISGID)
+	{
+		perms[6] = (perms[6] == 'x')?'s' : 'S';
+	}
+	if(mode & S_ISVTX)
+	{
+		perms[9] = (perms[9] == 'x')?'t' : 'T';
+	}
+	
+	return perms;
+}
+const char *statbuf_get_date(struct stat *sbuf)
+{
+	static char datebuf[64] = {0};
+	const char *p_date_format = "%b %e %H:%M";//日期格式
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	time_t local_time = tv.tv_sec;
+	if(sbuf->st_mtime > local_time ||  (local_time - sbuf->st_mtime) > 60*60*24*182)//大于半年
+	{
+		p_date_format = "%b %e  %Y";
+	}
+
+	struct tm * p_tm = localtime(&local_time);
+	strftime(datebuf, sizeof(datebuf), p_date_format, p_tm);//日期格式化
+	
+	return datebuf;
 }

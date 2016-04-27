@@ -8,7 +8,10 @@ int main()
 	
 
 parseconf_load_file(MINIFTP_CONF);//加载配置文件
-/*  printf("pav=%d\n",tunable_pasv_enable);
+
+#ifdef DEBUG
+	//打印配置信息
+    printf("pav=%d\n",tunable_pasv_enable);
 	printf("port=%d\n",tunable_port_enable);
 	printf("listenport=%u\n",tunable_listen_port);
 	printf("maxclients=%u\n",tunable_max_clients);
@@ -19,7 +22,8 @@ parseconf_load_file(MINIFTP_CONF);//加载配置文件
 	printf("datatiemout=%u\n",tunable_data_connection_timeout);
 	printf("localumask=0%o\n",tunable_local_umask);
 	printf("uploadrate=%u\n",tunable_upload_max_rate);
-	printf("downloadrate=%u\n",tunable_download_max_rate);*/
+	printf("downloadrate=%u\n",tunable_download_max_rate);
+#endif
 
 if(tunable_listen_address == NULL)
 		printf("listen address = NULL");

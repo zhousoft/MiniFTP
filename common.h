@@ -1,6 +1,8 @@
 #ifndef _COMMON_H_
 #define _COMMON_H_
 
+#define DEBUG
+
 #include <unistd.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -13,6 +15,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <linux/capability.h>
+#include <sys/syscall.h>
 
 #include <time.h>
 #include <sys/stat.h>

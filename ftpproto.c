@@ -455,7 +455,7 @@ static void do_pasv(session_t *sess)
 	char ip[16] = {0};
 	getlocalip(ip);
     
-	priv_sock_send_cmd(sess->child_fd, PRIV_SOCK_PASV_LISTEN);//向nobody进程发送请求获取监听套接字
+	priv_sock_send_cmd(sess->child_fd, PRIV_SOCK_PASV_LISTEN);//向nobody进程发送请求获取监听端口
 	unsigned short port = (int)priv_sock_get_int(sess->child_fd);
 
 	/*sess->pasv_listen_fd = tcp_server(ip, 0);//随机端口

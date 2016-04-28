@@ -84,7 +84,7 @@ static void privop_pasv_get_data_sock(session_t *sess)
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = inet_addr(ip);
-	int fd = tcp_client(0);//20端口 FTP协议数据传输端口-暂不指定端口（由于gethostbyname获取ip问题）
+	int fd = tcp_client(20);//20端口 FTP协议数据传输端口
 	printf("get fd = %d\n",fd);
 	if(fd == -1)
 	{

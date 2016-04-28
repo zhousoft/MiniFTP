@@ -17,6 +17,11 @@
 #include <netdb.h>
 #include <linux/capability.h>
 #include <sys/syscall.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+
+
+
 
 #include <time.h>
 #include <sys/stat.h>

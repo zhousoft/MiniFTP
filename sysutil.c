@@ -39,6 +39,9 @@ int tcp_server(const char *host, unsigned short port)
 	servaddr.sin_family = AF_INET;
 	if(host != NULL)
 	{
+#ifdef DEBUG
+	printf("host != NULL \n");
+#endif
 		if(inet_aton(host, &servaddr.sin_addr) == 0)/*转换失败，host不是有效的IP地址,可能提供的是主机名*/
 		{
 			struct hostent *hp;
@@ -52,6 +55,9 @@ int tcp_server(const char *host, unsigned short port)
 	else/*主机名为空,获取本机任意ip地址*/
 	{
 		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+#ifdef DEBUG
+		printf("server listen ip is %s\n", inet_ntoa(servaddr.sin_addr));
+#endif
 	}
 
 	servaddr.sin_port = htons(port);
@@ -79,6 +85,19 @@ int tcp_server(const char *host, unsigned short port)
 
 int getlocalip(char *ip)
 {
+
+#ifdef DEBUG	
+	printf("start get localip\n");
+#endif
+	
+	int sockfd;
+	struct ifconf ifconf;
+	struct ifreq *ifreq;
+    char buf[1024] = {0};
+	struct sockaddr_in sin;
+
+
+	int i;
 	char host[100] = {0};
 	if(gethostname(host,sizeof(host)) < 0)
 	{
@@ -91,17 +110,51 @@ int getlocalip(char *ip)
 		printf("getlocalip err: gethostbyname fail.\n");
 		return -1;
 	}
+   //gethostbyname()函数解析/etc/hosts文件来获取IP，但是有时该文件内会没有真实IP，
+   //因此需要判断下获取的IP是否为真实IP（非127开头的回环IP）
+
 	strcpy(ip, inet_ntoa(*(struct in_addr*)hp->h_addr));
+	if(ip[0] == '1' && ip[1] == '2' && ip[2] == '7')
+	{
+		printf("ues ioctl\n");
+		//hosts文件没有真实IP，读网卡信息来获取
+				//初始化ifconf
+		ifconf.ifc_len = 1024;
+		ifconf.ifc_buf = buf;
+		if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+		{
+			return -1;
+		}
+		//获取所有接口信息
+		ioctl(sockfd, SIOCGIFCONF, &ifconf);
+		//逐个获取IP得到可用IP-排除lo地址
+		ifreq = (struct ifreq *)buf;
+		for(i = (ifconf.ifc_len/sizeof(struct ifreq)); i > 0;i--)
+		{
+			if(strcmp(ifreq->ifr_name, "lo") == 0)//排除lo本地回环地址
+			{
+				ifreq++;
+				continue;
+			}
+			memcpy(&sin,&ifreq->ifr_addr, sizeof(sin));
+			strcpy(ip, inet_ntoa((struct in_addr)sin.sin_addr));
+			printf("-ioctlip:%s\n",inet_ntoa((struct in_addr)sin.sin_addr));
+			break;
+		}
+		close(sockfd);
+
+	}
 #ifdef DEBUG
 	
-	strcpy(ip,"192.168.1.115");
 	printf("hostname:%s\naddress list:",hp->h_name);
-	int i;
+	
 	for( i = 0; hp->h_addr_list[i]; i++)
 		printf("%s\t",inet_ntoa(*(struct in_addr*)(hp->h_addr_list[i])));
-#endif
 	printf("getlocalip: %s\n",ip);
-		return 0;
+#endif
+
+
+	return 0;
 }
 
 /**

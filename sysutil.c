@@ -20,7 +20,6 @@ int tcp_client(unsigned short port)
 		if(bind(sock, (struct sockaddr*)&localaddr, sizeof(localaddr)) < 0)
 			ERR_EXIT("bind");
 	}
-	printf("tcpclient = %d\n",sock);
 	return sock;
 }
 /**
@@ -31,16 +30,19 @@ int tcp_client(unsigned short port)
 */
 int tcp_server(const char *host, unsigned short port)
 {
+#ifdef DEBUG
+	printf("start tcp_server, host is %s, port is %d\n",host,port);
+#endif
 	int listenfd;
 	if((listenfd = socket(PF_INET, SOCK_STREAM,0)) < 0)
 		ERR_EXIT("tcp_server");
 	struct sockaddr_in servaddr;
 	memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	if(host != NULL)
+	if(host != NULL && strcmp(host, "anylocal") != 0)
 	{
 #ifdef DEBUG
-	printf("host != NULL \n");
+	printf("start server,listen host is %s\n",host);
 #endif
 		if(inet_aton(host, &servaddr.sin_addr) == 0)/*转换失败，host不是有效的IP地址,可能提供的是主机名*/
 		{
@@ -52,9 +54,9 @@ int tcp_server(const char *host, unsigned short port)
 
 		}
 	}
-	else/*主机名为空,获取本机任意ip地址*/
+	else/*主机名为空或指定为anylocal时,监听本机任意ip地址*/
 	{
-		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+		servaddr.sin_addr.s_addr = htonl(INADDR_ANY);//INADDR_ANY(0.0.0.0)表示监听所有网卡信息
 #ifdef DEBUG
 		printf("server listen ip is %s\n", inet_ntoa(servaddr.sin_addr));
 #endif
@@ -116,7 +118,6 @@ int getlocalip(char *ip)
 	strcpy(ip, inet_ntoa(*(struct in_addr*)hp->h_addr));
 	if(ip[0] == '1' && ip[1] == '2' && ip[2] == '7')
 	{
-		printf("ues ioctl\n");
 		//hosts文件没有真实IP，读网卡信息来获取
 				//初始化ifconf
 		ifconf.ifc_len = 1024;
@@ -138,7 +139,9 @@ int getlocalip(char *ip)
 			}
 			memcpy(&sin,&ifreq->ifr_addr, sizeof(sin));
 			strcpy(ip, inet_ntoa((struct in_addr)sin.sin_addr));
+#ifdef DEBUG
 			printf("-ioctlip:%s\n",inet_ntoa((struct in_addr)sin.sin_addr));
+#endif
 			break;
 		}
 		close(sockfd);
@@ -149,8 +152,10 @@ int getlocalip(char *ip)
 	printf("hostname:%s\naddress list:",hp->h_name);
 	
 	for( i = 0; hp->h_addr_list[i]; i++)
+	{
 		printf("%s\t",inet_ntoa(*(struct in_addr*)(hp->h_addr_list[i])));
-	printf("getlocalip: %s\n",ip);
+	}
+	printf("\ngetlocalip: %s\n",ip);
 #endif
 
 
@@ -332,7 +337,9 @@ int connect_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
 		activate_nonblock(fd);
 	
 	ret = connect(fd, (struct sockaddr*)addr, addrlen);
+#ifdef DEBUG
 	printf("connect nonblock ret = %d and errno = %d\n",ret,errno);
+#endif
 	if(ret < 0 && errno == EINPROGRESS)
 	{
 		fd_set connect_fdset;
@@ -348,13 +355,17 @@ int connect_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
 		}while(ret < 0 && errno == EINTR);
 		if(ret == 0)
 		{
+#ifdef DEBUG
 			printf("connect time out.\n");
+#endif
 			errno = ETIMEDOUT;
 			ret = -1;
 		}
 		else if(ret < 0)
 		{
+#ifdef DEBUG
 			printf("connect timeout err\n");
+#endif
 			return -1;
 		}
 		else if(ret == 1)
@@ -366,17 +377,23 @@ int connect_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
 			int sockoptret = getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &socklen);
 			if(sockoptret == -1)
 			{
+#ifdef	DEBUG
 				printf("getsocktopt err.\n");
+#endif
 				return -1;
 			}
 			if(err == 0)
 			{
+#ifdef DEBUG
 				printf("err == 0\n");
+#endif
 				ret = 0;
 			}
 			else
-			{
+			{	
+#ifdef DEBUG 
 				printf("connect sockt err.\n");
+#endif
 				errno = err;
 				ret = -1;
 			}
@@ -387,7 +404,6 @@ int connect_timeout(int fd, struct sockaddr_in *addr, unsigned int wait_seconds)
 	{
 		deactivate_nonblock(fd);
 	}
-	printf("return ret = %d\n",ret);
 	return ret;
 }
 /**

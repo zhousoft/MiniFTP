@@ -61,8 +61,16 @@ char priv_sock_get_cmd(int fd)
 	ret = readn(fd, &res, sizeof(res));
 	if(ret != sizeof(res))
 	{
-		fprintf(stderr, "priv_sock_get_cmd error\n");
-		exit(EXIT_FAILURE);
+		if(ret == 0)
+		{	
+			printf("client close.\n");
+			exit(EXIT_SUCCESS);
+		}
+		else
+		{
+			fprintf(stderr, "priv_sock_get_cmd error\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 	return res;
 }

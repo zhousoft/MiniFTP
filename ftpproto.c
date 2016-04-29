@@ -126,14 +126,6 @@ void handle_child(session_t *sess)
 		//将命令转换为大写，便于比较-参数不做处理
 		str_upper(sess->cmd);
 		//处理FTP命令
-		/*if(strcmp("USER", sess->cmd) == 0)
-		{
-			do_user(sess);
-		}
-		else if(strcmp("PASS", sess->cmd) == 0)
-		{
-			do_pass(sess);
-		}*/
 		int i;
 		int size = sizeof(ctrl_cmds) / sizeof(ctrl_cmds[0]);
 		for(i = 0; i<size; i++)

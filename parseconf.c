@@ -80,11 +80,8 @@ void parseconf_load_setting(const char *setting)
 	str_split(setting, key, value, '=');//解析出配置项名称和配置值
 	if(strlen(value) == 0)//配置项中没有等号或者等号后为空
 	{
-		if(strcmp(key, "listen_address") != 0)//只有ip地址允许为空-监听本机随机ip
-		{
-			fprintf(stderr, "miss value in config file for: %s\n", key);
-			exit(EXIT_FAILURE);
-		}
+		fprintf(stderr, "miss value in config file for: %s\n", key);
+		exit(EXIT_FAILURE);
 	}
 	//根据配置项的key在三种配置类型表格中搜索对应的配置项
 	//1.查找字符串类型的配置项

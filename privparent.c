@@ -115,7 +115,7 @@ static void privop_pasv_listen(session_t *sess)
 {
 	char ip[16] = {0};
 	getlocalip(ip);
-	sess->pasv_listen_fd = tcp_server(ip, 0);//随机端口
+	sess->pasv_listen_fd = tcp_server(ip, 20);//20端口
 	struct sockaddr_in addr;
 	socklen_t addlen = sizeof(addr);
 	if(getsockname(sess->pasv_listen_fd, (struct sockaddr *)&addr, &addlen) < 0)

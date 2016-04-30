@@ -63,7 +63,7 @@ char priv_sock_get_cmd(int fd)
 	{
 		if(ret == 0)
 		{	
-			printf("client close.\n");
+			printf("service procees has quitted, noboy process quit.\n");
 			exit(EXIT_SUCCESS);
 		}
 		else

@@ -101,7 +101,7 @@ static ftpcmd_t ctrl_cmds[] = {
 };
 
 
-
+//服务进程处理函数
 void handle_child(session_t *sess)
 {
 
@@ -225,7 +225,7 @@ int list_common(session_t *sess, int detail)
 	
 }
 
-
+//port模式激活
 int port_active(session_t *sess)
 {
 	if(sess->port_addr)
@@ -243,18 +243,9 @@ int port_active(session_t *sess)
 	}
 }
 
-
+//pasv模式激活
 int pasv_active(session_t *sess)
 {
-	/*if(sess->pasv_listen_fd != -1)
-	{
-		if(port_active(sess))
-		{
-			fprintf(stderr,"both port and pasv are active.");
-			exit(EXIT_FAILURE);
-		}
-		return 1;
-	}*/
 	//监听套接字由nobody进程创建，服务进程需要向nobody进程询问是否激活pasv模式
 	priv_sock_send_cmd(sess->child_fd,PRIV_SOCK_PASV_ACTIVE);
 	int active = priv_sock_get_int(sess->child_fd);
@@ -269,7 +260,7 @@ int pasv_active(session_t *sess)
 	}
 	return 0;
 }
-
+//主动模式中将客户端ip端口发送给nobody进程，获取nobody进程的已连接socket
 int get_port_fd(session_t *sess)
 {
 	//向nobody进程发送PRIV_SOCK_GET_DATA_SOCK命令   1
@@ -292,7 +283,7 @@ int get_port_fd(session_t *sess)
 	}
 	return 1;
 }
-
+//被动模式，由nobody进程创建监听socket并发送给服务进程
 int get_pasv_fd(session_t *sess)
 {
 	priv_sock_send_cmd(sess->child_fd, PRIV_SOCK_PASV_ACCEPT);
@@ -307,7 +298,7 @@ int get_pasv_fd(session_t *sess)
 	}
 	return 1;
 }
-
+//获取与客户端输出数据的socket
 int get_transfer_fd(session_t *sess)
 {
 	//检测是否收到PORT或PASV命令
@@ -320,15 +311,6 @@ int get_transfer_fd(session_t *sess)
 	//如果是主动模式
 	if(port_active(sess))
 	{
-		//tcp_client(20);//主动模式绑定端口20
-	/*	int fd = tcp_client(0);
-		if(connect_timeout(fd, sess->port_addr, tunable_connect_timeout) < 0)
-		{
-			close(fd);
-			return 0;
-		}
-
-		sess->data_fd = fd;*/
 
 		if(get_port_fd(sess) == 0)
 		{
@@ -341,14 +323,6 @@ int get_transfer_fd(session_t *sess)
 	if(pasv_active(sess))
 	{
 		
-	/*	int fd = accept_timeout(sess->pasv_listen_fd, NULL, tunable_accept_timeout);
-		close(sess->pasv_listen_fd);
-		if(fd == -1)
-		{
-			return 0;
-		}
-		sess->data_fd = fd;*/
-
 		if(get_pasv_fd(sess) == 0)
 		{
 			ret = 0;
@@ -420,10 +394,14 @@ static void do_cdup(session_t *sess)
 }
 static void do_quit(session_t *sess)
 {
+#ifdef DEBUG	
+	printf("client has quit,service process quit.\n");
+#endif
+	exit(EXIT_SUCCESS);
 }
 static void do_port(session_t *sess)
 {
-	//PORT 192,168,1,110,196,170 
+	//PORT 192,168,1,110,196,170(ip,port高8位，低8位)
 	unsigned int v[6];
 	sscanf(sess->arg,"%u,%u,%u,%u,%u,%u", &v[2], &v[3], &v[4], &v[5], &v[0], &v[1]);//最后两个数字是端口号高8位低8位，保存在数组开头
 	sess->port_addr = (struct sockaddr_in *)malloc(sizeof(struct sockaddr));
@@ -450,14 +428,6 @@ static void do_pasv(session_t *sess)
 	priv_sock_send_cmd(sess->child_fd, PRIV_SOCK_PASV_LISTEN);//向nobody进程发送请求获取监听端口
 	unsigned short port = (int)priv_sock_get_int(sess->child_fd);
 
-	/*sess->pasv_listen_fd = tcp_server(ip, 0);//随机端口
-	struct sockaddr_in addr;
-	socklen_t addlen = sizeof(addr);
-	if(getsockname(sess->pasv_listen_fd, (struct sockaddr *)&addr, &addlen) < 0)
-	{
-		ERR_EXIT("getsockname");
-	}
-	unsigned short port = ntohs(addr.sin_port);*/
 	unsigned int v[4];
 	sscanf(ip,"%u.%u.%u.%u", &v[0], &v[1], &v[2], &v[3]);
 	char text[1024] = {0};
